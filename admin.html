@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ Thống Quản Trị Trung Tâm | Heritage Tours Admin Portal</title>
+  
+  <!-- Favicon SVG -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23D4AF37'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+          },
+          colors: {
+            heritage: {
+              gold: '#C59B27',
+              goldLight: '#E8CA65',
+              navy: '#0A1E36',
+              navyLight: '#132E52',
+              navyDark: '#051120',
+              cream: '#FAF8F5',
+              sand: '#F3EFEA',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK (Compat) & Realtime Cloud Backup -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background-color: #F8FAFC;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col">
+
+  <!-- ==================== LOGIN MODAL OVERLAY (IF NOT AUTHENTICATED) ==================== -->
+  <div id="login-modal" class="fixed inset-0 z-50 bg-heritage-navyDark/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full border border-slate-200 shadow-2xl relative">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-heritage-navy text-heritage-gold flex items-center justify-center mx-auto mb-4 shadow-lg border border-heritage-gold/30">
+          <i data-lucide="shield-lock" class="w-7 h-7"></i>
+        </div>
+        <div class="inline-block px-3 py-1 rounded-full bg-heritage-gold/15 text-heritage-gold font-bold text-xs uppercase tracking-wider mb-2">
+          Heritage Tours Security
+        </div>
+        <h2 class="text-2xl font-serif font-bold text-heritage-navy">Cổng Quản Trị Viên</h2>
+        <p class="text-xs text-slate-500 mt-1">Hệ thống theo dõi Booking, Truy cập &amp; Quản lý Phân quyền</p>
+      </div>
+
+      <!-- Quick Credentials Hint -->
+      <div class="mb-6 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+        <div class="font-bold mb-1 flex items-center gap-1.5 text-heritage-navy">
+          <i data-lucide="key" class="w-3.5 h-3.5 text-heritage-gold"></i>
+          <span>Tài khoản Quản Trị Mặc Định:</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-1 font-mono text-[11px]">
+          <div>Tên đăng nhập: <strong class="text-slate-900">admin</strong></div>
+          <div>Mật khẩu: <strong class="text-slate-900">Heritage@2026</strong></div>
+        </div>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5" for="login-username">Tên Đăng Nhập</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+            <input type="text" id="login-username" required placeholder="admin" value="admin" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 text-sm focus:border-heritage-gold focus:ring-1 focus:ring-heritage-gold outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5" for="login-password">Mật Khẩu</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+            <input type="password" id="login-password" required placeholder="••••••••" value="Heritage@2026" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 text-sm focus:border-heritage-gold focus:ring-1 focus:ring-heritage-gold outline-none">
+          </div>
+        </div>
+
+        <div id="login-error" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+          Tên đăng nhập hoặc mật khẩu không chính xác!
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-heritage-navy hover:bg-heritage-navyLight text-white font-bold text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4 text-heritage-gold"></i>
+          <span>Đăng Nhập Quản Trị</span>
+        </button>
+
+        <div class="text-center pt-2">
+          <a href="index.html" class="text-xs text-slate-500 hover:text-heritage-navy inline-flex items-center gap-1">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+            <span>Quay lại trang chủ Landing Page</span>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN ADMIN DASHBOARD ==================== -->
+  <div id="admin-app" class="flex-1 flex flex-col">
+    
+    <!-- Top Admin Bar -->
+    <header class="bg-heritage-navy text-white border-b border-white/10 sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-heritage-gold text-heritage-navy flex items-center justify-center font-bold">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-serif font-bold text-base text-white">HERITAGE TOURS</span>
+              <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-400/30">Admin Central</span>
+            </div>
+            <p class="text-[10px] text-slate-300">Cổng Điều Hành &amp; Giám Sát Thời Gian Thực</p>
+          </div>
+        </div>
+
+        <!-- Right User Status & Actions -->
+        <div class="flex items-center gap-3">
+          <a href="index.html" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold border border-white/20 transition-colors">
+            <i data-lucide="external-link" class="w-3.5 h-3.5 text-heritage-goldLight"></i>
+            <span>Xem Landing Page</span>
+          </a>
+
+          <!-- Firebase Cloud Backup & Sync Trigger -->
+          <button onclick="openFirebaseModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all" title="Cấu hình & Sao lưu dữ liệu Firebase Cloud">
+            <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="cloud-status-text" class="hidden sm:inline">Firebase Cloud</span>
+            <i data-lucide="cloud" class="w-3.5 h-3.5 text-heritage-goldLight"></i>
+          </button>
+
+          <!-- Active Admin Profile Pill -->
+          <div class="flex items-center gap-2.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/15">
+            <div class="w-7 h-7 rounded-full bg-heritage-gold text-heritage-navy flex items-center justify-center text-xs font-bold">
+              <span id="current-user-avatar">A</span>
+            </div>
+            <div class="text-left hidden md:block">
+              <div id="current-user-name" class="text-xs font-bold text-white">Main Administrator</div>
+              <div id="current-user-role" class="text-[10px] text-heritage-goldLight">Main Admin (Toàn quyền)</div>
+            </div>
+          </div>
+
+          <button onclick="handleLogout()" class="p-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold transition-colors" title="Đăng xuất">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-6 overflow-x-auto text-xs font-bold uppercase tracking-wider py-1">
+          <button onclick="switchAdminTab('overview')" id="tab-overview" class="py-3 px-1 border-b-2 border-heritage-gold text-heritage-navy flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            <span>Tổng Quan &amp; Truy Cập</span>
+          </button>
+          <button onclick="switchAdminTab('bookings')" id="tab-bookings" class="py-3 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2">
+            <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+            <span>Quản Lý Bookings</span>
+            <span id="booking-badge-count" class="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button onclick="switchAdminTab('subadmins')" id="tab-subadmins" class="py-3 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Quản Lý Sub-Admin</span>
+          </button>
+          <button onclick="switchAdminTab('activity')" id="tab-activity" class="py-3 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4"></i>
+            <span>Nhật Ký Hệ Thống</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Body -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+      <!-- ==================== TAB 1: OVERVIEW & TRAFFIC ==================== -->
+      <section id="pane-overview" class="admin-pane space-y-8">
+        
+        <!-- Quick Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <i data-lucide="eye" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-500">Tổng Lượt Xem (Pageviews)</div>
+              <div id="stat-pageviews" class="text-2xl font-bold text-slate-900 tabular-nums">1,482</div>
+              <div class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                <span>+18.4% so với hôm qua</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <i data-lucide="user-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-500">Khách Truy Cập (Visitors)</div>
+              <div id="stat-visitors" class="text-2xl font-bold text-slate-900 tabular-nums">648</div>
+              <div class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                <span>68.5% từ TP.HCM &amp; Miền Nam</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <i data-lucide="file-text" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-500">Tổng Yêu Cầu Giữ Chỗ</div>
+              <div id="stat-bookings" class="text-2xl font-bold text-slate-900 tabular-nums">24</div>
+              <div class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span>Series VNA đang xử lý</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <i data-lucide="percent" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-500">Tỷ Lệ Chuyển Đổi (CRO)</div>
+              <div id="stat-cro" class="text-2xl font-bold text-emerald-600 tabular-nums">3.7%</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Mục tiêu đoàn 20 khách 4 sao</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Traffic Breakdown & Device Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <div class="lg:col-span-8 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="font-bold text-base text-slate-900">Biểu Đồ Lưu Lượng Khách Theo Giờ (24 Giờ Qua)</h3>
+                <p class="text-xs text-slate-500">Khung giờ cao điểm truy cập tư vấn AI &amp; đặt giữ chỗ</p>
+              </div>
+              <span class="text-xs font-bold text-heritage-navy bg-slate-100 px-3 py-1 rounded-lg">Hôm nay</span>
+            </div>
+
+            <!-- CSS Bar Graph -->
+            <div class="h-48 flex items-end gap-2 sm:gap-3 pt-6 border-b border-slate-200">
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full bg-slate-200 rounded-t h-[20%]"></div>
+                <span class="text-[10px] text-slate-400">02h</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full bg-slate-200 rounded-t h-[15%]"></div>
+                <span class="text-[10px] text-slate-400">06h</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full bg-blue-400 rounded-t h-[55%]"></div>
+                <span class="text-[10px] text-slate-400">09h</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full bg-blue-500 rounded-t h-[75%]"></div>
+                <span class="text-[10px] text-slate-400">12h</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full bg-blue-400 rounded-t h-[60%]"></div>
+                <span class="text-[10px] text-slate-400">15h</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full bg-heritage-gold rounded-t h-[95%] relative group">
+                  <div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-heritage-navy text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Đỉnh 21h (Chat AI)
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold text-heritage-navy">21h</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-full bg-blue-600 rounded-t h-[80%]"></div>
+                <span class="text-[10px] text-slate-400">23h</span>
+              </div>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-between text-xs text-slate-500">
+              <div class="flex items-center gap-4">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-blue-500"></span> Lưu lượng thường</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-heritage-gold"></span> Khung giờ gia đình họp bàn (AI tư vấn)</span>
+              </div>
+              <span class="text-[11px]">Cập nhật tự động</span>
+            </div>
+          </div>
+
+          <div class="lg:col-span-4 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-base text-slate-900 mb-1">Nguồn &amp; Thiết Bị</h3>
+              <p class="text-xs text-slate-500 mb-6">Phân loại truy cập người dùng</p>
+
+              <div class="space-y-4">
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span>Mobile (iOS / Android)</span>
+                    <span class="text-slate-900 font-bold">72%</span>
+                  </div>
+                  <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div class="h-full bg-heritage-navy rounded-full" style="width: 72%"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span>Desktop / Máy tính</span>
+                    <span class="text-slate-900 font-bold">25%</span>
+                  </div>
+                  <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div class="h-full bg-heritage-gold rounded-full" style="width: 25%"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span>Tablet</span>
+                    <span class="text-slate-900 font-bold">3%</span>
+                  </div>
+                  <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div class="h-full bg-slate-400 rounded-full" style="width: 3%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 text-xs text-slate-500">
+              <div class="font-semibold text-slate-700 mb-2">Kênh giới thiệu hàng đầu:</div>
+              <div class="flex flex-wrap gap-2 text-[11px]">
+                <span class="bg-slate-100 px-2.5 py-1 rounded-md">Facebook: 42%</span>
+                <span class="bg-slate-100 px-2.5 py-1 rounded-md">Zalo: 31%</span>
+                <span class="bg-slate-100 px-2.5 py-1 rounded-md">Trực tiếp: 18%</span>
+                <span class="bg-slate-100 px-2.5 py-1 rounded-md">Google: 9%</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Recent Realtime Visitors Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="font-bold text-base text-slate-900">Lượt Truy Cập Thời Gian Thực Gần Nhất</h3>
+            <span class="text-xs text-emerald-600 font-bold flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Live Tracking</span>
+            </span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="px-6 py-3.5">Thời Gian</th>
+                  <th class="px-6 py-3.5">Khu Vực</th>
+                  <th class="px-6 py-3.5">Thiết Bị</th>
+                  <th class="px-6 py-3.5">Trang Đích</th>
+                  <th class="px-6 py-3.5">Hành Động</th>
+                </tr>
+              </thead>
+              <tbody id="realtime-visitors-body" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== TAB 2: BOOKINGS MANAGEMENT ==================== -->
+      <section id="pane-bookings" class="admin-pane hidden space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-serif font-bold text-heritage-navy">Danh Sách Phiếu Giữ Chỗ Tour Di Sản 5N4Đ</h2>
+            <p class="text-xs text-slate-500">Dữ liệu từ Form Đăng Ký và Trợ Lý AI trên Landing Page</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="exportBookingsCsv()" class="px-4 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Xuất File CSV</span>
+            </button>
+            <button onclick="openNewBookingModal()" class="px-4 py-2.5 rounded-xl bg-heritage-navy hover:bg-heritage-navyLight text-white text-xs font-bold flex items-center gap-1.5 shadow transition-colors">
+              <i data-lucide="plus" class="w-4 h-4 text-heritage-gold"></i>
+              <span>Thêm Booking Mới</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="text" id="booking-search" oninput="renderBookingsTable()" placeholder="Tìm theo Tên khách hàng, Số điện thoại..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 text-xs focus:border-heritage-gold outline-none">
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-500 font-semibold whitespace-nowrap">Trạng thái:</label>
+            <select id="booking-filter-status" onchange="renderBookingsTable()" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:border-heritage-gold outline-none bg-slate-50">
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="Mới tiếp nhận">Mới tiếp nhận</option>
+              <option value="Đang tư vấn">Đang tư vấn</option>
+              <option value="Đã cọc 50%">Đã cọc 50%</option>
+              <option value="Đã khóa vé VNA">Đã khóa vé VNA</option>
+              <option value="Hoàn tất">Hoàn tất</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Bookings Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="px-4 py-3.5">Mã / Ngày</th>
+                  <th class="px-4 py-3.5">Trưởng Đoàn</th>
+                  <th class="px-4 py-3.5">Số ĐT / Zalo</th>
+                  <th class="px-4 py-3.5">Gói Tour</th>
+                  <th class="px-4 py-3.5 text-center">Số Khách</th>
+                  <th class="px-4 py-3.5">Dự Kiến Đi</th>
+                  <th class="px-4 py-3.5">Trạng Thái</th>
+                  <th class="px-4 py-3.5 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="bookings-table-body" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== TAB 3: SUB-ADMIN MANAGEMENT ==================== -->
+      <section id="pane-subadmins" class="admin-pane hidden space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-heritage-gold/20 text-heritage-navy text-xs font-bold mb-1">
+              <i data-lucide="crown" class="w-3.5 h-3.5 text-heritage-gold"></i>
+              <span>Đặc Quyền Của Main Admin</span>
+            </div>
+            <h2 class="text-xl font-serif font-bold text-heritage-navy">Quản Lý Danh Sách &amp; Phân Quyền Sub-Admin</h2>
+            <p class="text-xs text-slate-500">Chỉ Main Admin mới có quyền tạo thêm tài khoản quản trị viên phụ hoặc xóa bỏ quyền truy cập.</p>
+          </div>
+
+          <button onclick="openCreateSubAdminModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-heritage-gold to-heritage-navy text-white text-xs font-bold flex items-center gap-2 shadow hover:opacity-95 transition-all">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Tạo Tài Khoản Sub-Admin</span>
+          </button>
+        </div>
+
+        <!-- Role Permissions Banner -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl bg-amber-50/80 border border-amber-200">
+            <div class="font-bold text-xs text-amber-900 flex items-center gap-1.5 mb-1">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-amber-700"></i>
+              <span>Main Admin (Tối cao)</span>
+            </div>
+            <p class="text-[11px] text-amber-800 leading-relaxed">
+              Toàn quyền hệ thống: Xem toàn bộ dữ liệu, tạo và xóa Sub-admin, cấu hình bảng giá, xuất báo cáo doanh thu.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-blue-50/80 border border-blue-200">
+            <div class="font-bold text-xs text-blue-900 flex items-center gap-1.5 mb-1">
+              <i data-lucide="headphones" class="w-4 h-4 text-blue-700"></i>
+              <span>Sub-Admin: Điều Hành &amp; Sales</span>
+            </div>
+            <p class="text-[11px] text-blue-800 leading-relaxed">
+              Tiếp nhận khách hàng, gọi điện tư vấn, khóa vé máy bay Vietnam Airlines và cập nhật tiến độ cọc 50%.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200">
+            <div class="font-bold text-xs text-emerald-900 flex items-center gap-1.5 mb-1">
+              <i data-lucide="receipt" class="w-4 h-4 text-emerald-700"></i>
+              <span>Sub-Admin: Kế Toán &amp; Vé Đoàn</span>
+            </div>
+            <p class="text-[11px] text-emerald-800 leading-relaxed">
+              Xác nhận tiền cọc ngân hàng qua QR, xuất hóa đơn VAT đỏ và khóa danh sách 20 khách với Vietnam Airlines.
+            </p>
+          </div>
+        </div>
+
+        <!-- Sub-Admins Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="font-bold text-base text-slate-900">Danh Sách Tài Khoản Quản Trị Đang Hoạt Động</h3>
+            <span class="text-xs text-slate-500 font-semibold" id="subadmin-total-badge">3 tài khoản</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="px-6 py-3.5">Họ &amp; Tên Quản Trị</th>
+                  <th class="px-6 py-3.5">Tên Đăng Nhập</th>
+                  <th class="px-6 py-3.5">Mật Khẩu</th>
+                  <th class="px-6 py-3.5">Vai Trò Phân Quyền</th>
+                  <th class="px-6 py-3.5">Ngày Cấp Quyền</th>
+                  <th class="px-6 py-3.5">Trạng Thái</th>
+                  <th class="px-6 py-3.5 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="subadmins-table-body" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== TAB 4: SYSTEM ACTIVITY ==================== -->
+      <section id="pane-activity" class="admin-pane hidden space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-serif font-bold text-heritage-navy">Nhật Ký Thao Tác Hệ Thống (Audit Logs)</h2>
+            <p class="text-xs text-slate-500">Ghi nhận mọi hoạt động đăng nhập, tạo/xóa tài khoản và cập nhật booking</p>
+          </div>
+          <button onclick="clearSystemLogs()" class="text-xs text-slate-500 hover:text-rose-600 font-semibold">
+            Xóa Lịch Sử
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div id="system-logs-container" class="space-y-4">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ==================== MODAL: CẤU HÌNH & SAO LƯU FIREBASE CLOUD ==================== -->
+  <div id="modal-firebase" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+            <i data-lucide="database" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-serif font-bold text-lg text-heritage-navy">Sao Lưu Dữ Liệu Firebase Cloud</h3>
+            <p class="text-xs text-slate-500">Đồng bộ Booking &amp; Sub-Admin lên Google Firebase</p>
+          </div>
+        </div>
+        <button onclick="closeFirebaseModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Cloud Status Banner -->
+      <div id="fb-status-banner" class="mb-6 p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2.5">
+          <span id="fb-dot" class="w-3 h-3 rounded-full bg-amber-400 shrink-0"></span>
+          <div>
+            <div id="fb-status-title" class="font-bold text-slate-800">Chế độ Offline (LocalStorage)</div>
+            <div id="fb-status-desc" class="text-[11px] text-slate-500">Dữ liệu đang lưu trên trình duyệt này. Nhập config để backup lên đám mây.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <button type="button" onclick="handleCloudBackup()" class="py-3 px-4 rounded-xl bg-heritage-navy hover:bg-heritage-navyLight text-white text-xs font-bold flex items-center justify-center gap-2 shadow transition-all">
+          <i data-lucide="upload-cloud" class="w-4 h-4 text-heritage-gold"></i>
+          <span>Sao Lưu Lên Cloud</span>
+        </button>
+        <button type="button" onclick="handleCloudRestore()" class="py-3 px-4 rounded-xl border-2 border-slate-300 hover:border-heritage-navy text-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition-all">
+          <i data-lucide="download-cloud" class="w-4 h-4 text-blue-600"></i>
+          <span>Khôi Phục Dữ Liệu</span>
+        </button>
+      </div>
+
+      <!-- Firebase Configuration Form -->
+      <form onsubmit="handleSaveFirebaseConfig(event)" class="space-y-3.5 pt-4 border-t border-slate-100">
+        <div class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span>Thông Số Kết Nối Firebase (Tùy Chọn):</span>
+          <span class="text-[10px] text-slate-400 font-normal">Realtime Database</span>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1" for="fb-api-key">API Key (Web API Key)</label>
+          <input type="text" id="fb-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:border-heritage-gold outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1" for="fb-database-url">Database URL</label>
+          <input type="text" id="fb-database-url" placeholder="https://your-project-default-rtdb.firebaseio.com" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:border-heritage-gold outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1" for="fb-project-id">Project ID</label>
+          <input type="text" id="fb-project-id" placeholder="heritage-tours-vn" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:border-heritage-gold outline-none">
+        </div>
+
+        <div class="pt-3 flex items-center justify-between">
+          <button type="button" onclick="loadSampleFirebaseConfig()" class="text-xs text-blue-600 hover:underline">
+            Tải mẫu cấu hình mẫu
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-heritage-gold text-heritage-navy text-xs font-bold flex items-center gap-1.5 shadow">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Lưu &amp; Kết Nối</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- 3-Step Setup Guide -->
+      <div class="mt-6 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
+        <div class="font-bold mb-1 flex items-center gap-1 text-heritage-navy">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-heritage-gold"></i>
+          <span>Hướng dẫn 3 phút tạo Firebase miễn phí:</span>
+        </div>
+        <ol class="list-decimal pl-4 space-y-1 text-slate-700">
+          <li>Truy cập <a href="https://console.firebase.google.com" target="_blank" class="text-blue-700 underline font-semibold">console.firebase.google.com</a> và tạo Project mới.</li>
+          <li>Vào mục <strong>Realtime Database</strong> &rarr; bấm <strong>Create Database</strong> &rarr; chọn chế độ <strong>Start in test mode</strong>.</li>
+          <li>Vào <strong>Project Settings</strong> (biểu tượng bánh răng) &rarr; copy <code>apiKey</code>, <code>databaseURL</code>, <code>projectId</code> dán vào ô trên!</li>
+        </ol>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: TẠO SUB-ADMIN MỚI ==================== -->
+  <div id="modal-create-subadmin" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full border border-slate-200 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-heritage-navy text-heritage-gold flex items-center justify-center font-bold">
+            <i data-lucide="user-plus" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-serif font-bold text-lg text-heritage-navy">Tạo Tài Khoản Sub-Admin</h3>
+            <p class="text-xs text-slate-500">Cấp quyền truy cập mới cho nhân sự</p>
+          </div>
+        </div>
+        <button onclick="closeCreateSubAdminModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleCreateSubAdmin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="new-sub-fullname">Họ và Tên Nhân Sự *</label>
+          <input type="text" id="new-sub-fullname" required placeholder="Ví dụ: Trần Văn Nam" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs focus:border-heritage-gold outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="new-sub-username">Tên Đăng Nhập (Username) *</label>
+          <input type="text" id="new-sub-username" required placeholder="Ví dụ: sales.nam" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs focus:border-heritage-gold outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="new-sub-role">Vai Trò Phân Quyền *</label>
+          <select id="new-sub-role" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs focus:border-heritage-gold outline-none bg-slate-50">
+            <option value="Điều Hành Tour 4 Sao">Điều Hành Tour 4 Sao</option>
+            <option value="Chuyên Viên Tư Vấn Sales">Chuyên Viên Tư Vấn Sales</option>
+            <option value="Kế Toán & Vé Đoàn">Kế Toán &amp; Vé Đoàn</option>
+            <option value="Chăm Sóc Khách Hàng 24/7">Chăm Sóc Khách Hàng 24/7</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1" for="new-sub-password">Mật Khẩu Khởi Tạo *</label>
+          <input type="password" id="new-sub-password" required placeholder="Tối thiểu 6 ký tự" minlength="6" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs focus:border-heritage-gold outline-none">
+        </div>
+
+        <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+          <button type="button" onclick="closeCreateSubAdminModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold hover:bg-slate-50">
+            Hủy Bỏ
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-heritage-navy hover:bg-heritage-navyLight text-white text-xs font-bold flex items-center gap-2 shadow">
+            <i data-lucide="check" class="w-4 h-4 text-heritage-gold"></i>
+            <span>Tạo Tài Khoản Ngay</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT APP LOGIC ==================== -->
+  <script>
+    // Initial Seed Data for Sub-Admins (Created by Main Admin)
+    const DEFAULT_ACCOUNTS = [
+      {
+        id: 'adm_1',
+        fullname: 'Main Administrator (Tối Cao)',
+        username: 'admin',
+        password: 'Heritage@2026',
+        role: 'Main Admin',
+        isMainAdmin: true,
+        createdDate: '2026-01-01',
+        status: 'Hoạt động'
+      },
+      {
+        id: 'adm_2',
+        fullname: 'Nguyễn Thu Trang (Trưởng Bộ Phận Điều Hành)',
+        username: 'trang.dieuhanh',
+        password: 'Tour4Sao@2026',
+        role: 'Điều Hành Tour 4 Sao & Vé Đoàn',
+        isMainAdmin: false,
+        createdDate: '2026-02-15',
+        status: 'Hoạt động'
+      },
+      {
+        id: 'adm_3',
+        fullname: 'Lê Hoàng Minh (Chuyên Viên Tư Vấn)',
+        username: 'minh.sales',
+        password: 'SalesHeritage@2026',
+        role: 'Chuyên Viên Tư Vấn Sales & AI Leads',
+        isMainAdmin: false,
+        createdDate: '2026-03-01',
+        status: 'Hoạt động'
+      },
+      {
+        id: 'adm_4',
+        fullname: 'Phạm Hồng Ánh (Kế Toán Trưởng)',
+        username: 'ketoan.heritage',
+        password: 'KeToan@2026',
+        role: 'Kế Toán & Xác Nhận Cọc VietQR',
+        isMainAdmin: false,
+        createdDate: '2026-03-10',
+        status: 'Hoạt động'
+      },
+      {
+        id: 'adm_5',
+        fullname: 'Võ Thành Nam (HDV Trưởng Tuyến)',
+        username: 'hdv.nam',
+        password: 'HuongDanVien@2026',
+        role: 'Hướng Dẫn Viên Trưởng Tuyến Di Sản',
+        isMainAdmin: false,
+        createdDate: '2026-04-05',
+        status: 'Hoạt động'
+      }
+    ];
+
+    // Seed Data for Sample Bookings if empty
+    const DEFAULT_BOOKINGS = [
+      {
+        id: 'BK-1082',
+        date: '2026-11-18 10:15',
+        name: 'Nguyễn Văn An',
+        phone: '0903 888 123',
+        package: 'Gói Trọn Gói 4 Sao Người Lớn (10.890.000đ)',
+        adults: 4,
+        kids: 1,
+        departure: 'Thứ 5 tuần đầu tháng sau',
+        notes: 'Gia đình có bố mẹ 65 tuổi, ưu tiên ghế xe hàng trên',
+        status: 'Đã cọc 50%'
+      },
+      {
+        id: 'BK-1081',
+        date: '2026-11-18 09:40',
+        name: 'Trần Thị Mỹ Linh',
+        phone: '0912 345 678',
+        package: 'Gói Nghỉ Dưỡng Riêng Tư - Phòng Đơn',
+        adults: 1,
+        kids: 0,
+        departure: 'Khởi hành ngày 25/11',
+        notes: 'Yêu cầu phòng Monarque tầng cao view trực diện biển',
+        status: 'Mới tiếp nhận'
+      },
+      {
+        id: 'BK-1080',
+        date: '2026-11-17 21:30',
+        name: 'Đoàn Cty Dược Phẩm Sài Gòn (Anh Bảo)',
+        phone: '0988 777 999',
+        package: 'Đoàn Riêng Doanh Nghiệp 20 Khách',
+        adults: 20,
+        kids: 0,
+        departure: 'Trung tuần tháng 12',
+        notes: 'Cần xuất hóa đơn đỏ VAT 10% và gắn banner chụp ảnh',
+        status: 'Đã khóa vé VNA'
+      }
+    ];
+
+    // Seed Realtime Visitors
+    const SAMPLE_VISITORS = [
+      { time: '10 giây trước', location: 'Quận 1, TP.HCM', device: 'iPhone 15 Pro (Safari)', page: '/#pricing', action: 'Bật xem giá VAT 10%' },
+      { time: '1 phút trước', location: 'Quận 7, TP.HCM', device: 'Samsung Galaxy S24 (Chrome)', page: '/#itinerary', action: 'Xem Ngày 3: Cầu Vàng Bà Nà' },
+      { time: '3 phút trước', location: 'Biên Hòa, Đồng Nai', device: 'MacBook Air (Chrome)', page: '/#booking-section', action: 'Mở Trợ lý AI hỏi giá gia đình' },
+      { time: '6 phút trước', location: 'Bình Thạnh, TP.HCM', device: 'Windows PC (Edge)', page: '/#hero', action: 'Xem video & ảnh di sản' },
+      { time: '12 phút trước', location: 'Thủ Đức, TP.HCM', device: 'iPad Pro (Safari)', page: '/#pricing', action: 'Nhấp nút Giữ Chỗ Gói 4 Sao' }
+    ];
+
+    // Initialize LocalStorage Database
+    function initDatabase() {
+      const stored = localStorage.getItem('heritage_admin_accounts');
+      if (!stored || JSON.parse(stored).length < 4) {
+        localStorage.setItem('heritage_admin_accounts', JSON.stringify(DEFAULT_ACCOUNTS));
+      }
+      if (!localStorage.getItem('heritage_bookings')) {
+        localStorage.setItem('heritage_bookings', JSON.stringify(DEFAULT_BOOKINGS));
+      }
+      if (!localStorage.getItem('heritage_system_logs')) {
+        const initialLogs = [
+          { time: '2026-11-18 19:40', user: 'admin', action: 'Khởi động hệ thống giám sát và đồng bộ dữ liệu Landing Page' },
+          { time: '2026-11-18 19:45', user: 'trang.dieuhanh', action: 'Xác nhận giữ vé đoàn Vietnam Airlines cho mã BK-1080' },
+          { time: '2026-11-18 20:00', user: 'admin', action: 'Main Admin đã khởi tạo bộ 4 tài khoản Sub-Admin chuyên biệt' }
+        ];
+        localStorage.setItem('heritage_system_logs', JSON.stringify(initialLogs));
+      }
+    }
+
+    initDatabase();
+
+    // Check Login Session
+    let currentUser = null;
+    function checkAuth() {
+      const sessionUser = sessionStorage.getItem('heritage_auth_user');
+      const loginModal = document.getElementById('login-modal');
+      
+      if (sessionUser) {
+        currentUser = JSON.parse(sessionUser);
+        loginModal.classList.add('hidden');
+        updateHeaderUser();
+        renderAllDashboard();
+      } else {
+        loginModal.classList.remove('hidden');
+      }
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value.trim();
+      const errBox = document.getElementById('login-error');
+
+      const accounts = JSON.parse(localStorage.getItem('heritage_admin_accounts') || '[]');
+      const found = accounts.find(acc => acc.username.toLowerCase() === u.toLowerCase() && acc.password === p);
+
+      if (found) {
+        currentUser = found;
+        sessionStorage.setItem('heritage_auth_user', JSON.stringify(found));
+        errBox.classList.add('hidden');
+        document.getElementById('login-modal').classList.add('hidden');
+        logAction(found.username, 'Đăng nhập vào hệ thống quản trị thành công');
+        updateHeaderUser();
+        renderAllDashboard();
+      } else {
+        errBox.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất khỏi trang quản trị?')) {
+        sessionStorage.removeItem('heritage_auth_user');
+        currentUser = null;
+        document.getElementById('login-modal').classList.remove('hidden');
+      }
+    }
+
+    function updateHeaderUser() {
+      if (!currentUser) return;
+      document.getElementById('current-user-avatar').textContent = currentUser.fullname.charAt(0).toUpperCase();
+      document.getElementById('current-user-name').textContent = currentUser.fullname;
+      document.getElementById('current-user-role').textContent = currentUser.isMainAdmin ? '👑 Main Admin (Toàn quyền)' : `Sub-Admin: ${currentUser.role}`;
+    }
+
+    // Switch Admin Tabs
+    function switchAdminTab(tabName) {
+      const tabs = ['overview', 'bookings', 'subadmins', 'activity'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const pane = document.getElementById(`pane-${t}`);
+        if (t === tabName) {
+          btn.classList.add('border-heritage-gold', 'text-heritage-navy');
+          btn.classList.remove('border-transparent', 'text-slate-500');
+          pane.classList.remove('hidden');
+        } else {
+          btn.classList.remove('border-heritage-gold', 'text-heritage-navy');
+          btn.classList.add('border-transparent', 'text-slate-500');
+          pane.classList.add('hidden');
+        }
+      });
+      lucide.createIcons();
+    }
+
+    // Render Everything
+    function renderAllDashboard() {
+      renderRealtimeVisitors();
+      renderBookingsTable();
+      renderSubAdminsTable();
+      renderSystemLogs();
+      updateStatistics();
+      lucide.createIcons();
+    }
+
+    function updateStatistics() {
+      const bookings = JSON.parse(localStorage.getItem('heritage_bookings') || '[]');
+      document.getElementById('stat-bookings').textContent = bookings.length;
+      document.getElementById('booking-badge-count').textContent = bookings.length;
+    }
+
+    function renderRealtimeVisitors() {
+      const tbody = document.getElementById('realtime-visitors-body');
+      tbody.innerHTML = SAMPLE_VISITORS.map(v => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="px-6 py-3.5 font-mono text-slate-500 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            ${v.time}
+          </td>
+          <td class="px-6 py-3.5 font-semibold text-slate-900">${v.location}</td>
+          <td class="px-6 py-3.5 text-slate-600">${v.device}</td>
+          <td class="px-6 py-3.5 font-mono text-[11px] text-blue-600">${v.page}</td>
+          <td class="px-6 py-3.5 text-slate-700">${v.action}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Render Bookings Table
+    function renderBookingsTable() {
+      const bookings = JSON.parse(localStorage.getItem('heritage_bookings') || '[]');
+      const search = document.getElementById('booking-search').value.toLowerCase();
+      const statusFilter = document.getElementById('booking-filter-status').value;
+      const tbody = document.getElementById('bookings-table-body');
+
+      const filtered = bookings.filter(b => {
+        const matchesSearch = b.name.toLowerCase().includes(search) || b.phone.includes(search);
+        const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">Không tìm thấy yêu cầu giữ chỗ nào.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(b => {
+        let badgeColor = 'bg-slate-100 text-slate-700';
+        if (b.status === 'Mới tiếp nhận') badgeColor = 'bg-blue-100 text-blue-800';
+        if (b.status === 'Đang tư vấn') badgeColor = 'bg-amber-100 text-amber-800';
+        if (b.status === 'Đã cọc 50%') badgeColor = 'bg-emerald-100 text-emerald-800 font-bold';
+        if (b.status === 'Đã khóa vé VNA') badgeColor = 'bg-purple-100 text-purple-800 font-bold';
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3.5 font-mono font-bold text-slate-900">
+              <div>${b.id}</div>
+              <div class="text-[10px] text-slate-400 font-normal">${b.date}</div>
+            </td>
+            <td class="px-4 py-3.5 font-semibold text-slate-900">${b.name}</td>
+            <td class="px-4 py-3.5 font-mono text-slate-600">${b.phone}</td>
+            <td class="px-4 py-3.5 text-slate-700 max-w-[200px] truncate" title="${b.package}">${b.package}</td>
+            <td class="px-4 py-3.5 text-center font-bold text-slate-800">${b.adults}L ${b.kids ? `+ ${b.kids}N` : ''}</td>
+            <td class="px-4 py-3.5 text-slate-600">${b.departure || 'Linh hoạt'}</td>
+            <td class="px-4 py-3.5">
+              <select onchange="updateBookingStatus('${b.id}', this.value)" class="text-[11px] px-2 py-1 rounded-lg border border-slate-200 ${badgeColor} font-semibold cursor-pointer outline-none">
+                <option value="Mới tiếp nhận" ${b.status === 'Mới tiếp nhận' ? 'selected' : ''}>Mới tiếp nhận</option>
+                <option value="Đang tư vấn" ${b.status === 'Đang tư vấn' ? 'selected' : ''}>Đang tư vấn</option>
+                <option value="Đã cọc 50%" ${b.status === 'Đã cọc 50%' ? 'selected' : ''}>Đã cọc 50%</option>
+                <option value="Đã khóa vé VNA" ${b.status === 'Đã khóa vé VNA' ? 'selected' : ''}>Đã khóa vé VNA</option>
+                <option value="Hoàn tất" ${b.status === 'Hoàn tất' ? 'selected' : ''}>Hoàn tất</option>
+              </select>
+            </td>
+            <td class="px-4 py-3.5 text-right">
+              <button onclick="deleteBooking('${b.id}')" class="text-slate-400 hover:text-rose-600 p-1" title="Xóa yêu cầu">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function updateBookingStatus(id, newStatus) {
+      const bookings = JSON.parse(localStorage.getItem('heritage_bookings') || '[]');
+      const idx = bookings.findIndex(b => b.id === id);
+      if (idx !== -1) {
+        bookings[idx].status = newStatus;
+        localStorage.setItem('heritage_bookings', JSON.stringify(bookings));
+        logAction(currentUser?.username || 'admin', `Cập nhật trạng thái booking ${id} thành "${newStatus}"`);
+        if (window.HeritageFirebase && window.HeritageFirebase.isReady()) {
+          window.HeritageFirebase.updateBookingStatus(id, newStatus);
+        }
+        renderBookingsTable();
+      }
+    }
+
+    function deleteBooking(id) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa mã booking ${id}?`)) return;
+      let bookings = JSON.parse(localStorage.getItem('heritage_bookings') || '[]');
+      bookings = bookings.filter(b => b.id !== id);
+      localStorage.setItem('heritage_bookings', JSON.stringify(bookings));
+      logAction(currentUser?.username || 'admin', `Đã xóa booking ${id}`);
+      if (window.HeritageFirebase && window.HeritageFirebase.isReady()) {
+        window.HeritageFirebase.deleteBooking(id);
+      }
+      renderBookingsTable();
+      updateStatistics();
+    }
+
+    function exportBookingsCsv() {
+      const bookings = JSON.parse(localStorage.getItem('heritage_bookings') || '[]');
+      if (bookings.length === 0) {
+        alert('Chưa có booking nào để xuất.');
+        return;
+      }
+
+      let csv = 'Mã Booking,Thời Gian,Họ Tên,Số Điện Thoại,Gói Dịch Vụ,Người Lớn,Trẻ Em,Khởi Hành,Trạng Thái,Ghi Chú\n';
+      bookings.forEach(b => {
+        csv += `"${b.id}","${b.date}","${b.name}","${b.phone}","${b.package}","${b.adults}","${b.kids || 0}","${b.departure || ''}","${b.status}","${b.notes || ''}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Heritage_Tour_Bookings_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ==================== SUB-ADMIN RBAC LOGIC ====================
+    function renderSubAdminsTable() {
+      const accounts = JSON.parse(localStorage.getItem('heritage_admin_accounts') || '[]');
+      const tbody = document.getElementById('subadmins-table-body');
+      document.getElementById('subadmin-total-badge').textContent = `${accounts.length} tài khoản`;
+
+      tbody.innerHTML = accounts.map(acc => {
+        const isMain = acc.isMainAdmin;
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-6 py-4 flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full ${isMain ? 'bg-heritage-gold text-heritage-navy' : 'bg-slate-200 text-slate-700'} font-bold flex items-center justify-center text-xs shrink-0">
+                ${acc.fullname.charAt(0)}
+              </div>
+              <div>
+                <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                  <span>${acc.fullname}</span>
+                  ${isMain ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">👑 Main Admin</span>' : ''}
+                </div>
+                <div class="text-[11px] text-slate-400">ID: ${acc.id}</div>
+              </div>
+            </td>
+            <td class="px-6 py-4 font-mono font-semibold text-slate-800">${acc.username}</td>
+            <td class="px-6 py-4 font-mono text-xs">
+              <span class="bg-slate-100 px-2 py-1 rounded border border-slate-200 font-bold text-slate-800">${acc.password}</span>
+            </td>
+            <td class="px-6 py-4">
+              <span class="px-2.5 py-1 rounded-lg ${isMain ? 'bg-heritage-navy text-heritage-goldLight' : 'bg-slate-100 text-slate-700'} font-semibold text-[11px]">
+                ${acc.role}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-slate-500 font-mono text-[11px]">${acc.createdDate}</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>${acc.status}</span>
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right">
+              ${isMain ? '<span class="text-slate-400 text-[11px] italic">Bảo vệ vĩnh viễn</span>' : `
+                <button onclick="deleteSubAdmin('${acc.id}', '${acc.username}')" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] transition-colors">
+                  Xóa Sub-Admin
+                </button>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function openCreateSubAdminModal() {
+      if (!currentUser?.isMainAdmin) {
+        alert('CHỈ MAIN ADMIN mới có quyền tạo thêm tài khoản quản trị viên phụ (Sub-Admin)!');
+        return;
+      }
+      document.getElementById('modal-create-subadmin').classList.remove('hidden');
+    }
+
+    function closeCreateSubAdminModal() {
+      document.getElementById('modal-create-subadmin').classList.add('hidden');
+    }
+
+    function handleCreateSubAdmin(event) {
+      event.preventDefault();
+      if (!currentUser?.isMainAdmin) {
+        alert('Chỉ Main Admin mới có quyền thực hiện thao tác này!');
+        return;
+      }
+
+      const fullname = document.getElementById('new-sub-fullname').value.trim();
+      const username = document.getElementById('new-sub-username').value.trim().toLowerCase();
+      const role = document.getElementById('new-sub-role').value;
+      const password = document.getElementById('new-sub-password').value;
+
+      let accounts = JSON.parse(localStorage.getItem('heritage_admin_accounts') || '[]');
+      if (accounts.some(a => a.username.toLowerCase() === username)) {
+        alert(`Tên đăng nhập "${username}" đã tồn tại! Vui lòng chọn tên khác.`);
+        return;
+      }
+
+      const newAccount = {
+        id: 'adm_' + Date.now().toString().slice(-4),
+        fullname,
+        username,
+        password,
+        role,
+        isMainAdmin: false,
+        createdDate: new Date().toISOString().slice(0, 10),
+        status: 'Hoạt động'
+      };
+
+      accounts.push(newAccount);
+      localStorage.setItem('heritage_admin_accounts', JSON.stringify(accounts));
+      logAction(currentUser.username, `Đã cấp quyền Sub-Admin mới: "${fullname}" (${username}) - Vai trò: ${role}`);
+      
+      closeCreateSubAdminModal();
+      renderSubAdminsTable();
+      alert(`Đã tạo thành công Sub-Admin cho: ${fullname} (${username})!`);
+    }
+
+    function deleteSubAdmin(id, username) {
+      if (!currentUser?.isMainAdmin) {
+        alert('CHỈ MAIN ADMIN mới có quyền xóa tài khoản Sub-Admin!');
+        return;
+      }
+
+      if (confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN tài khoản Sub-admin "${username}"?`)) {
+        let accounts = JSON.parse(localStorage.getItem('heritage_admin_accounts') || '[]');
+        accounts = accounts.filter(a => a.id !== id);
+        localStorage.setItem('heritage_admin_accounts', JSON.stringify(accounts));
+        logAction(currentUser.username, `Main Admin đã xóa tài khoản Sub-admin "${username}"`);
+        renderSubAdminsTable();
+      }
+    }
+
+    // System Logs
+    function renderSystemLogs() {
+      const logs = JSON.parse(localStorage.getItem('heritage_system_logs') || '[]');
+      const container = document.getElementById('system-logs-container');
+      
+      if (logs.length === 0) {
+        container.innerHTML = '<div class="text-slate-400 text-xs">Chưa có nhật ký hoạt động.</div>';
+        return;
+      }
+
+      container.innerHTML = logs.map(l => `
+        <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+          <div class="w-6 h-6 rounded-lg bg-heritage-navy text-heritage-gold flex items-center justify-center shrink-0 font-mono text-[10px]">
+            <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold text-slate-800">@${l.user}</span>
+              <span class="font-mono text-[11px] text-slate-400">${l.time}</span>
+            </div>
+            <div class="text-slate-600">${l.action}</div>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function logAction(user, action) {
+      let logs = JSON.parse(localStorage.getItem('heritage_system_logs') || '[]');
+      const now = new Date();
+      const timeStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+      logs.unshift({ time: timeStr, user, action });
+      if (logs.length > 50) logs.pop();
+      localStorage.setItem('heritage_system_logs', JSON.stringify(logs));
+      renderSystemLogs();
+    }
+
+    function clearSystemLogs() {
+      if (confirm('Bạn có muốn xóa toàn bộ lịch sử thao tác?')) {
+        localStorage.setItem('heritage_system_logs', JSON.stringify([]));
+        renderSystemLogs();
+      }
+    }
+
+    // ==================== FIREBASE CLOUD SYNC & BACKUP LOGIC ====================
+    function openFirebaseModal() {
+      const config = window.HeritageFirebase ? window.HeritageFirebase.getConfig() : {};
+      document.getElementById('fb-api-key').value = config.apiKey || '';
+      document.getElementById('fb-database-url').value = config.databaseURL || '';
+      document.getElementById('fb-project-id').value = config.projectId || '';
+      updateFirebaseUI();
+      document.getElementById('modal-firebase').classList.remove('hidden');
+    }
+
+    function closeFirebaseModal() {
+      document.getElementById('modal-firebase').classList.add('hidden');
+    }
+
+    function updateFirebaseUI() {
+      const isConnected = window.HeritageFirebase && window.HeritageFirebase.isReady();
+      const dotHeader = document.getElementById('cloud-status-dot');
+      const textHeader = document.getElementById('cloud-status-text');
+      const bannerDot = document.getElementById('fb-dot');
+      const bannerTitle = document.getElementById('fb-status-title');
+      const bannerDesc = document.getElementById('fb-status-desc');
+
+      if (isConnected) {
+        if (dotHeader) dotHeader.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        if (textHeader) textHeader.textContent = 'Cloud Connected';
+        if (bannerDot) bannerDot.className = 'w-3 h-3 rounded-full bg-emerald-500 shrink-0';
+        if (bannerTitle) bannerTitle.textContent = 'Đã kết nối Firebase Realtime Database!';
+        if (bannerDesc) bannerDesc.textContent = 'Mọi booking và thay đổi sẽ tự động đồng bộ tức thì lên Cloud Google.';
+      } else {
+        if (dotHeader) dotHeader.className = 'w-2 h-2 rounded-full bg-amber-400';
+        if (textHeader) textHeader.textContent = 'Offline Backup';
+        if (bannerDot) bannerDot.className = 'w-3 h-3 rounded-full bg-amber-400 shrink-0';
+        if (bannerTitle) bannerTitle.textContent = 'Chế độ Lưu trữ Cục bộ (LocalStorage)';
+        if (bannerDesc) bannerDesc.textContent = 'Dữ liệu được lưu an toàn trên máy. Nhập config Firebase để sao lưu online.';
+      }
+    }
+
+    function handleSaveFirebaseConfig(event) {
+      event.preventDefault();
+      const apiKey = document.getElementById('fb-api-key').value.trim();
+      const databaseURL = document.getElementById('fb-database-url').value.trim();
+      const projectId = document.getElementById('fb-project-id').value.trim();
+
+      const newConfig = {
+        apiKey,
+        databaseURL,
+        projectId,
+        authDomain: `${projectId}.firebaseapp.com`,
+        storageBucket: `${projectId}.appspot.com`
+      };
+
+      if (window.HeritageFirebase) {
+        window.HeritageFirebase.saveConfig(newConfig);
+      }
+
+      updateFirebaseUI();
+      alert('Đã lưu cấu hình Firebase! Hệ thống đang thử kết nối...');
+      closeFirebaseModal();
+    }
+
+    async function handleCloudBackup() {
+      if (!window.HeritageFirebase || !window.HeritageFirebase.isReady()) {
+        alert('Vui lòng nhập API Key và Database URL của Firebase để thực hiện sao lưu lên Cloud!');
+        return;
+      }
+
+      try {
+        const result = await window.HeritageFirebase.createFullBackup();
+        logAction(currentUser?.username || 'admin', `Đã sao lưu toàn bộ dữ liệu lên Firebase Cloud (${result.backupId})`);
+        alert(`✓ Sao lưu thành công lên Firebase Cloud lúc ${result.date}!`);
+      } catch (err) {
+        alert('Lỗi sao lưu: ' + err.message);
+      }
+    }
+
+    async function handleCloudRestore() {
+      if (!confirm('Khôi phục từ Firebase Cloud sẽ cập nhật lại toàn bộ danh sách booking và tài khoản trên trình duyệt. Bạn có muốn tiếp tục?')) return;
+
+      try {
+        await window.HeritageFirebase.restoreFromCloud();
+        renderAllDashboard();
+        alert('✓ Đã khôi phục dữ liệu từ Firebase Cloud thành công!');
+        closeFirebaseModal();
+      } catch (err) {
+        alert('Lỗi khôi phục: ' + err.message);
+      }
+    }
+
+    function loadSampleFirebaseConfig() {
+      document.getElementById('fb-api-key').value = 'AIzaSyA8sampleKeyHeritageTours2026';
+      document.getElementById('fb-database-url').value = 'https://heritage-tours-vn-default-rtdb.firebaseio.com';
+      document.getElementById('fb-project-id').value = 'heritage-tours-vn';
+    }
+
+    window.addEventListener('heritage_firebase_status', () => {
+      updateFirebaseUI();
+    });
+
+    // Check auth on page load
+    checkAuth();
+  </script>
+
+</body>
+</html>

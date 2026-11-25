@@ -1,0 +1,19 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Temporary files
+*.tmp
+*.log
+
+# Dependencies & Build Cache
+node_modules/
+.vercel/
+.cache/
+dist/
+
+# Local Environment & Secrets
+.env.local
+.env.*.local

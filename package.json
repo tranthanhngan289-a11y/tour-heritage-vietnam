@@ -1,0 +1,22 @@
+{
+  "name": "heritage-tours-vietnam",
+  "version": "1.0.0",
+  "description": "Tour Cánh Cung Di Sản Miền Trung 5N4Đ - Luxury 4-Star Boutique Tour Landing Page & Admin Portal",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8088",
+    "test": "echo \"Ready for Vercel deployment\" && exit 0"
+  },
+  "keywords": [
+    "vietnam-travel",
+    "heritage-tour",
+    "danang",
+    "hue",
+    "hoian",
+    "bana-hills",
+    "landing-page",
+    "admin-dashboard"
+  ],
+  "author": "Heritage Tours",
+  "license": "MIT"
+}
