@@ -36,21 +36,17 @@ Trang web giới thiệu và thương mại hóa sản phẩm du lịch chủ l�
 
 ### 1. ☁️ Cấu Hình Sao Lưu Dữ Liệu Qua Google Firebase
 
-Dự án đã tích hợp sẵn module `firebase-config.js` với chế độ tự động chuyển đổi thông minh:
-* Khi chưa cấu hình Firebase: Hệ thống chạy ở **Chế độ Cục bộ (Offline LocalStorage)**.
-* Khi kết nối Firebase: Tự động đồng bộ thời gian thực giữa Landing Page và Admin Dashboard trên mọi thiết bị.
+Dự án đã được cấu hình và tích hợp sẵn thông tin Project Firebase chính thức của bạn trong `firebase-config.js`:
+* **Project ID:** `hanhtrinhdisan-8d83a`
+* **Auth Domain:** `hanhtrinhdisan-8d83a.firebaseapp.com`
+* **Storage Bucket:** `hanhtrinhdisan-8d83a.firebasestorage.app`
+* **Google Analytics:** `G-30XD4PW0QM`
+* **Cơ chế sao lưu đa tầng (Dual-Engine):** Hỗ trợ tự động Cloud Firestore & Realtime Database, kèm bộ đệm an toàn Offline LocalStorage khi mất kết nối mạng.
 
-#### Các bước tạo Firebase Database (Miễn phí 100%):
-1. Truy cập [Firebase Console](https://console.firebase.google.com/) và đăng nhập tài khoản Google.
-2. Bấm **Add Project** (ví dụ đặt tên: `heritage-tours-vn`).
-3. Vào menu bên trái chọn **Build** $\to$ **Realtime Database** $\to$ bấm **Create Database**.
-4. Chọn vị trí server (Singapore `asia-southeast1` để có tốc độ nhanh nhất tại Việt Nam).
-5. Tại bước Security Rules, chọn **Start in test mode** (hoặc cấu hình rules đọc/ghi cho `bookings`).
-6. Vào biểu tượng **Bánh răng (Project Settings)** $\to$ tab **General** $\to$ cuộn xuống mục **Your apps** $\to$ bấm icon Web (`</>`) để lấy:
-   - `apiKey`
-   - `databaseURL`
-   - `projectId`
-7. Mở trang [admin.html](http://localhost:8088/admin.html), bấm nút **Firebase Cloud** trên thanh tiêu đề và dán các thông số vào để kích hoạt sao lưu đám mây tức thì!
+> **Lưu ý kích hoạt trên Firebase Console:**
+> 1. Truy cập [Firebase Console](https://console.firebase.google.com/project/hanhtrinhdisan-8d83a/overview).
+> 2. Chọn **Build** $\to$ **Firestore Database** (hoặc **Realtime Database**) $\to$ bấm **Create Database**.
+> 3. Chọn tab **Rules** và thiết lập quyền đọc/ghi cho ứng dụng web (ví dụ `allow read, write: if true;` trong giai đoạn chạy thử nghiệm).
 
 ---
 
